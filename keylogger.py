@@ -1,65 +1,81 @@
 from pynput import keyboard, mouse
 
-# Ruta del archivo de texto para almacenar las teclas presionadas y los clics
+# Archivos para guardar datos
 file_path = "teclas.txt"
-file_path_muse = "clicks.txt"
+file_path_mouse = "clicks.txt"
 
-# Lista para almacenar las teclas presionadas y clics
+# Listas para almacenar eventos
 teclas_presionadas = []
 clics = []
 
-# Bandera para controlar la captura de teclas
+# Bandera para controlar captura
 captura_activa = True
+teclas_ctrl = set()  # Para rastrear teclas modificadoras presionadas
 
 
+# Función para eventos del mouse
 def on_click(x, y, button, pressed):
     if pressed and captura_activa:
         clics.append(f"Mouse Click: Coordenadas: ({x}, {y}), Botón: {button}")
 
-# Función para manejar los eventos de pulsaciones de teclado
+
+# Función para eventos del teclado
 def on_press(key):
     global captura_activa
+
+    # Detectar si se presionan teclas modificadoras
+    if key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r):
+        teclas_ctrl.add('ctrl')
 
     try:
         tecla = key.char
     except AttributeError:
         tecla = str(key)
-    teclas_presionadas.append(tecla)
 
-    # Si se presiona la combinación de teclas "Ctrl + C", detener la captura y guardar en el archivo
-    if key == keyboard.Key.ctrl and tecla == 'c':
+    if tecla is not None:
+        teclas_presionadas.append(tecla)
+
+    # Detectar Ctrl + C para detener la captura
+    if 'ctrl' in teclas_ctrl and (tecla == 'c' or tecla == 'C'):
         captura_activa = False
+        return False  # Detiene el listener de teclado
 
-# Crear los objetos Listener para el mouse y el teclado
+
+def on_release(key):
+    # Quitar las teclas modificadoras al soltarlas
+    if key in (keyboard.Key.ctrl_l, keyboard.Key.ctrl_r):
+        teclas_ctrl.discard('ctrl')
+
+
+# Crear listeners
 mouse_listener = mouse.Listener(on_click=on_click)
-# Crear el objeto Listener para el teclado
-keyboard_listener = keyboard.Listener(on_press=on_press)
+keyboard_listener = keyboard.Listener(on_press=on_press, on_release=on_release)
 
-# Iniciar la escucha de eventos del mouse
+# Iniciar listeners
 mouse_listener.start()
-# Iniciar la escucha de eventos del teclado
 keyboard_listener.start()
 
-# Mostrar un mensaje de inicio
 print("\033[38;5;88mCapturando teclas. Presiona \033[1;33m'Ctrl + C'\033[0;38;5;88m para detener la captura.")
 
 try:
-    # Mantener el programa en un bucle hasta que la captura se detenga
-    while captura_activa:
-        pass
+    # Esperar a que termine el listener de teclado (mouse listener se detiene al final)
+    keyboard_listener.join()
 except KeyboardInterrupt:
+    # Si presionas Ctrl+C en la terminal
     captura_activa = False
+    mouse_listener.stop()
+    keyboard_listener.stop()
 
-# Detener la captura (esto se ejecutará después de presionar "Ctrl + C")
+# Detener listeners
 mouse_listener.stop()
 keyboard_listener.stop()
 
-# Guardar las teclas presionadas en el archivo
+# Guardar resultados en archivos
 try:
     with open(file_path, "a") as file:
         file.write("\n".join(teclas_presionadas))
-    with open(file_path_muse, "w") as file:
+    with open(file_path_mouse, "w") as file:
         file.write("\n".join(clics))
-    print("\033[38;5;88mCaptura finalizada. Las teclas presionadas se han almacenado en el archivo:", file_path, file_path_muse)
+    print(f"\033[38;5;88mCaptura finalizada. Las teclas se han guardado en {file_path} y los clics en {file_path_mouse}")
 except Exception as e:
-    print("Ocurrió un error al guardar las teclas presionadas:", str(e))
+    print("Ocurrió un error al guardar los datos:", str(e))
