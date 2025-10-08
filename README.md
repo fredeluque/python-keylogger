@@ -1,3 +1,5 @@
 # python-keylogger
 Python keylogger
-![captura](https://i.ibb.co/CpF6mDQj/keylogger.jpg)
+<p align="center">
+  <img src="https://i.ibb.co/CpF6mDQj/keylogger.jpg" alt="Captura del proyecto" width="400">
+</p>
